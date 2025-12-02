@@ -1,0 +1,155 @@
+    <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大眾運輸查詢系統</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="bootstrap.css">
+</head>
+<body>
+    <header class="shadow d-flex" id="navbar">
+        <div class="d-flex col-10 logo">
+            <img src="./icon/mainicon.png" alt="" id="logo">
+            <h1 class="ln-100">大眾運輸查詢系統</h1>
+        </div>
+        <div class="col-2 ln-100">
+            <button class="btn btn-outline-dark" onclick="admin()">系統管理</button>
+            <button class="btn btn-outline-dark" onclick="logout()" id="logout-button">登出</button>
+        </div>
+    </header>
+    <div class="card card-body d-flex flex-row ml-auto mr-auto w-75 mt-5 shadow">
+        <a href="route.html" class="btn btn-outline-info mr-3" id="routelink">路線管理</a>
+        <a href="station.html" class="btn btn-outline-info mr-3" id="station-link active">站點管理</a>
+        <a href="bus.html" class="btn btn-outline-info mr-3 active" id="bus-link">車輛管理</a>
+        <a href="basic.html" class="btn btn-outline-info mr-3" id="form-link">表單管理</a>
+    </div>
+    <div id="app">
+        <div class="shadow card card-body mt-5 ml-auto mr-auto w-75 shadow">
+            <h1 class="text-center">
+                車輛管理
+                <button class="btn btn-outline-success" @click="insert" id="add-bus-button">新增</button>
+            </h1>
+            <table class="table table-striped">
+                <tr>
+                    <th style="width: 25%;">路線</th>
+                    <th style="width: 25%;">車牌</th>
+                    <th style="width: 20%;">行駛時間</th>
+                    <th style="width: 30%;">操作</th>
+                </tr>
+                <tr v-for="item in buses">
+                    <td class="bus-route">{{item.name}}</td>
+                    <td class="bus-plate">{{item.plate}}</td>
+                    <td class="bus-runtime">{{item.time}}</td>
+                    <td>
+                        <button class="btn btn-outline-dark mr-3" @click="edit(item)" id="edit-busbutton" :data-bus="item.plate">編輯</button>
+                        <button class="btn btn-outline-danger" @click="del(item)" id="delete-bus-button" :data-bus="item.plate">刪除</button>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <div class="modal fade">
+            <form @submit.prevent="submit" class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header text-center">
+                        <h1>系統管理車輛</h1>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label>路線</label>
+                            <select name="route" id="route" class="form-control" v-model="route"  v-if="mode == 'insert'" required>
+                                <option selected disabled>請選擇路線</option>
+                                <option :value="item.id" v-for="item in routes">{{item.name}}</option>
+                            </select>
+                            <p v-if="mode == 'edit'">
+                                {{ form.name }}
+                            </p>
+                        </div>
+                        <div class="form-group">
+                            <label>車牌</label>
+                            <input type="text" class="form-control" name="plate" v-model="form.plate" required :disabled="mode == 'edit'">
+                        </div>
+                        <div class="form-group">
+                            <label>時間</label>
+                            <input type="number" class="form-control" min="0" name="runtime" v-model="form.time" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-outline-secondary" id="backbutton" onclick="back()" type="button">回上頁</button>
+                        <button class="btn btn-outline-primary" id="add-button" v-if="mode == 'insert'">新增</button>
+                        <button class="btn btn-outline-warning" id="edit-button" v-if="mode == 'edit'">編輯</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
+<script src="jqueryv3.7.1.js"></script>
+<script src="jquery-uiv1.13.2.js"></script>
+<script src="bootstrap.js"></script>
+<script src="vue.3.3.3.js"></script>
+<script src="js.js"></script>
+<script>
+    const {createApp} = Vue
+    createApp({
+        data(){
+            return{
+                captcha: "",
+                form: {},
+                mode: "insert",
+                buses: [],
+                routes: [],
+                route: ""
+            }
+        },
+        methods: {
+            fetch(){
+                $.post("api/get.php",{action: "bus"},(res)=>{
+                    this.buses = JSON.parse(res)
+                })
+            },
+            fetchRoutes(){
+                $.post("api/get.php",{action: "route"},(res)=>{
+                    this.routes = JSON.parse(res)
+                    this.route = this.routes[0].id
+                })
+            },
+            insert(){
+                this.fetchRoutes()
+                this.mode = "insert"
+                $("div.modal").modal("show")
+            },
+            edit(item){
+                this.mode = "edit"
+                this.form = item
+                this.form.id = item[0]
+                $("div.modal").modal("show")
+            },
+            del(item){
+                if (confirm(`確認刪除${item.plate}?`)) {
+                    $.post("api/del.php",{action:"bus",id:item[0]},()=>{
+                        alert("資料已刪除")
+                        this.fetch()
+                    })
+                }
+            },
+            submit(){
+                const url = this.mode == 'insert' ? 'api/add.php' : 'api/edit.php'
+                $.post(url,{
+                    plate: this.form.plate,
+                    route: this.route,  
+                    time: this.form.time,
+                    action: "bus",
+                    id: this.form.id},(res)=>{
+                    alert(res)
+                    back()
+                    this.fetch()
+                })
+            }
+        },
+        mounted(){
+            this.fetch()
+        }
+    }).mount("#app")
+</script>

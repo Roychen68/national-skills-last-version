@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大眾運輸查詢系統</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="bootstrap.css">
+    <style>
+        #chart{
+            position: relative;
+            height: 200px;
+            outline: 2px solid #ccc;
+        }
+        #chart td{
+            vertical-align: bottom;
+        }
+        span.chart{
+            position: absolute;
+            width: 10px;
+            display: inline-block;
+            background: #22d3ee;
+            bottom: 0;
+            min-height: 2px;
+            transition: .5s;
+        }
+    </style>
+</head>
+<body>
+    <header class="shadow d-flex" id="navbar">
+        <div class="d-flex col-10 logo">
+            <img src="./icon/mainicon.png" alt="" id="logo">
+            <h1 class="ln-100">大眾運輸查詢系統</h1>
+        </div>
+        <div class="col-2 ln-100">
+            <button class="btn btn-outline-dark" onclick="admin()">系統管理</button>
+            <button class="btn btn-outline-dark" onclick="logout()" id="logout-button">登出</button>
+        </div>
+    </header>
+    <div class="card card-body d-flex flex-row ml-auto mr-auto w-75 mt-5 shadow">
+        <a href="route.html" class="btn btn-outline-info mr-3" id="routelink">路線管理</a>
+        <a href="station.html" class="btn btn-outline-info mr-3" id="station-link">站點管理</a>
+        <a href="bus.html" class="btn btn-outline-info mr-3" id="bus-link">車輛管理</a>
+        <a href="basic.html" class="btn btn-outline-info mr-3 active" id="form-link">表單管理</a>
+    </div>
+    <div id="app">
+        <div class="shadow card card-body mt-5 ml-auto mr-auto w-75 shadow flex-row">
+            <div class="col-3">
+                <a href="basic.html" class="btn btn btn-outline-dark w-100 mb-3" id="basicsetting-link">基本設定</a>
+                <a href="response.html" class="btn btn btn-outline-dark w-100 mb-3" id="responsesetting-link">檢視回應</a>
+                <a href="statistical.html" class="btn btn btn-outline-dark w-100 active" id="statisticalcountsetting-link">統計資料</a>
+            </div>
+            <div class="col-9">
+                <h3 class="text-left">統計資料(總人數:{{ total }})</h3>
+                <table class="table">
+                    <tr>
+                        <th class="w-50">評價</th>
+                        <th class="w-25">人數</th>
+                        <th class="w-25">比例</th>
+                    </tr>
+                    <tr>
+                        <td>非常不滿意</td>
+                        <td>{{ count[0] }}</td>
+                        <td>{{ averages[0] }}</td>
+                    </tr>
+                    <tr>
+                        <td>不滿意</td>
+                        <td>{{ count[1] }}</td>
+                        <td>{{ averages[1] }}</td>
+                    </tr>
+                    <tr>
+                        <td>普通</td>
+                        <td>{{ count[2] }}</td>
+                        <td>{{ averages[2] }}</td>
+                    </tr>
+                    <tr>
+                        <td>滿意</td>
+                        <td>{{ count[3] }}</td>
+                        <td>{{ averages[3] }}</td>
+                    </tr>
+                    <tr>
+                        <td>非常滿意</td>
+                        <td>{{ count[4] }}</td>
+                        <td>{{ averages[4] }}</td>
+                    </tr>
+                </table>
+                <h3>長條圖</h3>
+                <table class="table">
+                    <tr id="chart">
+                        <td><span class="chart" :style="{ height: averages[0] + '%'}"></span></td>
+                        <td><span class="chart" :style="{ height: averages[1] + '%'}"></span></td>
+                        <td><span class="chart" :style="{ height: averages[2] + '%'}"></span></td>
+                        <td><span class="chart" :style="{ height: averages[3] + '%'}"></span></td>
+                        <td><span class="chart" :style="{ height: averages[4] + '%'}"></span></td>
+                    </tr>
+                    <tr>
+                        <th style="width: 20%;">非常不滿意</th>
+                        <th style="width: 20%;">不滿意</th>
+                        <th style="width: 20%;">普通</th>
+                        <th style="width: 20%;">滿意</th>
+                        <th style="width: 20%;">非常滿意</th>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+<script src="jqueryv3.7.1.js"></script>
+<script src="jquery-uiv1.13.2.js"></script>
+<script src="bootstrap.js"></script>
+<script src="vue.3.3.3.js"></script>
+<script src="js.js"></script>
+<script>
+    const {createApp} = Vue
+    createApp({
+        data(){
+            return{
+                count: [0,0,0,0,0],
+                total: 0,
+                response: [],
+            }
+        },
+        computed: {
+            averages(){
+                if (this.total === 0) return [0,0,0,0,0]
+                return this.count.map(c => ((c / this.total) * 100).toFixed(2))
+            },
+        },
+        methods: {
+            fetch(){
+                $.post("api/get.php",{action: "response"},(res)=>{
+                    const all = JSON.parse(res)
+                    const rates = {
+                        "非常不滿意": 0,
+                        "不滿意": 1,
+                        "普通": 2,
+                        "滿意": 3,
+                        "非常滿意": 4,
+                    }
+                    all.forEach(({rate}) => {
+                        const index = rates[rate]
+                        if (index !== undefined) {
+                            this.count[index]++
+                            this.total++
+                        }
+                    });
+
+                })
+            }
+        },
+        mounted(){
+            this.fetch()
+        }
+    }).mount("#app")
+</script>

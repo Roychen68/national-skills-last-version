@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大眾運輸查詢系統</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="bootstrap.css">
+</head>
+<body>
+    <header class="shadow d-flex" id="navbar">
+        <div class="d-flex col-10 logo">
+            <img src="./icon/mainicon.png" alt="" id="logo">
+            <h1 class="ln-100">大眾運輸查詢系統</h1>
+        </div>
+        <div class="col-2 ln-100">
+            <button class="btn btn-outline-dark" onclick="admin()">系統管理</button>
+            <button class="btn btn-outline-dark" onclick="logout()" id="logout-button">登出</button>
+        </div>
+    </header>
+    <div class="card card-body d-flex flex-row ml-auto mr-auto w-75 mt-5 shadow">
+        <a href="route.html" class="btn btn-outline-info mr-3" id="routelink">路線管理</a>
+        <a href="station.html" class="btn btn-outline-info mr-3" id="station-link">站點管理</a>
+        <a href="bus.html" class="btn btn-outline-info mr-3" id="bus-link">車輛管理</a>
+        <a href="basic.html" class="btn btn-outline-info mr-3 active" id="form-link">表單管理</a>
+    </div>
+    <div id="app">
+        <div class="shadow card card-body mt-5 ml-auto mr-auto w-75 shadow flex-row">
+            <div class="col-3">
+                <a href="basic.html" class="btn btn btn-outline-dark w-100 mb-3 active" id="basicsetting-link">基本設定</a>
+                <a href="response.html" class="btn btn btn-outline-dark w-100 mb-3" id="responsesetting-link">檢視回應</a>
+                <a href="statistical.html" class="btn btn btn-outline-dark w-100" id="statisticalsetting-link">統計資料</a>
+            </div>
+            <div class="col-9">
+                <h1 class="text-center">基本設定</h1>
+                <div class="custom-control custom-switch">
+                    <input type="checkbox" class="custom-control-input" id="enable" name="enable" v-model="enable" @change="form">
+                    <label for="enable" class="custom-control-label">表單啟用狀態</label>
+                </div>
+                <input type="datetime-local" name="start-at" id="start-at" v-model="start" class="mt-3 form-control">
+                <input type="datetime-local" name="end-at" id="end-at" v-model="end" class="mt-3 form-control">
+                <button class="btn btn-primary mt-3" id="savebutton" @click="save">儲存</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+<script src="jqueryv3.7.1.js"></script>
+<script src="jquery-uiv1.13.2.js"></script>
+<script src="bootstrap.js"></script>
+<script src="vue.3.3.3.js"></script>
+<script src="js.js"></script>
+<script>
+    const {createApp} = Vue
+    createApp({
+        data(){
+            return{
+                start:"",
+                end:"",
+                enable:"",
+            }
+        },
+        methods: {
+            fetch(){
+                $.post("api/get.php",{action: "basic"},(res)=>{
+                    const data = JSON.parse(res)
+                    this.start = data[0].start
+                    this.end = data[0].end
+                })
+                $.post("api/get.php",{action: "form"},(res)=>{
+                    const data = JSON.parse(res)
+                    if (data[0].form == 1) {
+                        this.enable = true
+                    } else {
+                        this.enable = false
+                    }
+                    console.log(this.enable);
+                })
+            },
+            form(){
+                $.post("api/edit.php",{action: "form"})
+            },
+            save(){
+                if (this.start > this.end) {
+                    alert("起始時間不能大於結束時間")
+                    return
+                }
+                $.post("api/edit.php",{
+                    start: this.start,
+                    end: this.end,
+                    action: "basic"
+                },(res)=>{})
+            }
+        },
+        mounted(){
+            this.fetch()
+        }
+    }).mount("#app")
+</script>

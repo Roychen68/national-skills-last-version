@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大眾運輸查詢系統</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="bootstrap.css">
+</head>
+<body>
+    <header class="shadow d-flex" id="navbar">
+        <div class="d-flex col-10 logo">
+            <img src="./icon/mainicon.png" alt="" id="logo">
+            <h1 class="ln-100">大眾運輸查詢系統</h1>
+        </div>
+        <div class="col-2 ln-100">
+            <button class="btn btn-outline-dark" onclick="admin()">系統管理</button>
+            <button class="btn btn-outline-dark" onclick="logout()" id="logout-button">登出</button>
+        </div>
+    </header>
+    <div class="card card-body d-flex flex-row ml-auto mr-auto w-75 mt-5 shadow">
+        <a href="route.html" class="btn btn-outline-info mr-3" id="routelink">路線管理</a>
+        <a href="station.html" class="btn btn-outline-info mr-3" id="station-link">站點管理</a>
+        <a href="bus.html" class="btn btn-outline-info mr-3" id="bus-link">車輛管理</a>
+        <a href="basic.html" class="btn btn-outline-info mr-3 active" id="form-link">表單管理</a>
+    </div>
+    <div id="app">
+        <div class="shadow card card-body mt-5 ml-auto mr-auto w-75 shadow flex-row">
+            <div class="col-3">
+                <a href="basic.html" class="btn btn btn-outline-dark w-100 mb-3" id="basicsetting-link">基本設定</a>
+                <a href="response.html" class="btn btn btn-outline-dark w-100 mb-3 active" id="responsesetting-link">檢視回應</a>
+                <a href="statistical.html" class="btn btn btn-outline-dark w-100" id="statisticalsetting-link">統計資料</a>
+            </div>
+            <div class="col-9">
+                <h1 class="text-center">檢視回應
+                    <button class="btn btn-primary text-center" id="savebuttonJson" @click="json">用json匯出</button>
+                    <button class="btn btn-primary text-center" id="savebuttonCsv" @click="csv">用csv匯出</button>
+                </h1>
+                <table class="table table-striped">
+                    <tr>
+                        <th style="width: 16%;">名字</th>
+                        <th style="width: 16%;">信箱</th>
+                        <th style="width: 16%;">路線</th>
+                        <th style="width: 16%;">寶貴意見</th>
+                        <th style="width: 16%;">搭乘意見</th>
+                        <th style="width: 20%;">操作</th>
+                    </tr>
+                    <tr v-for="item in response">
+                        <td class="response-route">{{item.name}}</td>
+                        <td class="response-email">{{item.mail}}</td>
+                        <td class="response-route">{{item.route}}</td>
+                        <td class="response-note">{{item.note}}</td>
+                        <td class="response-note">{{item.rate}}</td>
+                        <td>
+                            <button class="btn btn-outline-danger" @click="del(item)" id="deletebutton" :data-email="item.mail">刪除</button>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        <a :href="download" id="json" download="json.json" hidden="hidden"></a>
+        <a :href="download" id="csv" download="csv.csv" hidden="hidden"></a>
+    </div>
+</body>
+</html>
+<script src="jqueryv3.7.1.js"></script>
+<script src="jquery-uiv1.13.2.js"></script>
+<script src="bootstrap.js"></script>
+<script src="vue.3.3.3.js"></script>
+<script src="js.js"></script>
+<script>
+    const {createApp} = Vue
+    createApp({
+        data(){
+            return{
+                start:"",
+                end:"",
+                enable:"",
+                response: "",
+                download: undefined
+            }
+        },
+        methods: {
+            fetch(){
+                $.post("api/get.php",{action: "response"},(res)=>{
+                    this.response = JSON.parse(res)
+                })
+            },
+            del(item){
+                if (confirm(`確認刪除${item[2]}?`)) {
+                    $.post("api/del.php",{action:"response",id:item[0]},()=>{
+                        alert("資料已刪除")
+                        this.fetch()
+                        count()
+                    })
+                }
+            },
+            json(){
+                $.post("api/get.php",{action:"download",type: "json"},(res)=>{
+                    const blob = new Blob ([res])
+                    this.download = URL.createObjectURL(blob)
+                    setTimeout(()=>document.querySelector('#json').click())
+                })
+            },
+            csv(){
+                $.post("api/get.php",{action:"download",type: "csv"},(res)=>{
+                    const blob = new Blob ([res])
+                    this.download = URL.createObjectURL(blob)
+                    setTimeout(()=>document.querySelector('#csv').click())
+                })
+            },
+        },
+        mounted(){
+            this.fetch()
+        }
+    }).mount("#app")
+</script>

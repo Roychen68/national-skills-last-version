@@ -1,0 +1,10 @@
+RewriteEngine On
+RewriteBase /web04%20simulated/module2Task4/api/
+
+RewriteRule ^signup$ signup.php [L]
+RewriteRule ^signin$ signin.php [L]
+RewriteRule ^newstop$ newstop.php [L]
+RewriteRule ^getroutelist$ getroutelist.php [L]
+RewriteRule ^changeformstatus$ changeformstatus.php [L]
+RewriteRule ^route$ route.php [L]
+RewriteRule ^response$ response.php [QSA,L]

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大眾運輸查詢系統</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="bootstrap.css">
+</head>
+<body>
+    <header class="shadow d-flex" id="navbar">
+        <div class="d-flex col-10 logo">
+            <img src="./icon/mainicon.png" alt="" id="logo">
+            <h1 class="ln-100">大眾運輸查詢系統</h1>
+        </div>
+        <div class="col-2 ln-100">
+            <button class="btn btn-outline-dark" onclick="admin()">系統管理</button>
+            <button class="btn btn-outline-dark" onclick="logout()" id="logout-button">登出</button>
+        </div>
+    </header>
+    <div class="card card-body d-flex flex-row ml-auto mr-auto w-75 mt-5 shadow">
+        <a href="route.html" class="btn btn-outline-info mr-3" id="routelink">路線管理</a>
+        <a href="station.html" class="btn btn-outline-info mr-3 active" id="station-link active">站點管理</a>
+        <a href="bus.html" class="btn btn-outline-info mr-3" id="bus-link">車輛管理</a>
+        <a href="basic.html" class="btn btn-outline-info mr-3" id="form-link">表單管理</a>
+    </div>
+    <div id="app">
+        <div class="shadow card card-body mt-5 ml-auto mr-auto w-75 shadow">
+            <h1 class="text-center">
+                站點管理
+                <button class="btn btn-outline-success" @click="insert" id="add-station-button">新增</button>
+            </h1>
+            <table class="table table-striped">
+                <tr>
+                    <th style="width: 50%;">站點名稱</th>
+                    <th style="width: 50%;">操作</th>
+                </tr>
+                <tr v-for="item in stations">
+                    <td class="station-name">{{item.name}}</td>
+                    <td>
+                        <button class="btn btn-outline-dark mr-3" @click="edit(item)" id="edit-stationbutton" :data-station="item.name">編輯</button>
+                        <button class="btn btn-outline-danger" @click="del(item)" id="delete-station-button" :data-station="item.name">刪除</button>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <div class="modal fade">
+            <form @submit.prevent="submit" class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header text-center">
+                        <h1>系統管理站點</h1>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="">站點名稱</label>
+                            <input type="text" class="form-control" name="station" v-model="form.name" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-outline-secondary" id="back-button" onclick="back()" type="button">回上頁</button>
+                        <button class="btn btn-outline-primary" id="add-button" v-if="mode == 'insert'">新增</button>
+                        <button class="btn btn-outline-warning" id="edit-button" v-if="mode == 'edit'">編輯</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
+<script src="jqueryv3.7.1.js"></script>
+<script src="jquery-uiv1.13.2.js"></script>
+<script src="bootstrap.js"></script>
+<script src="vue.3.3.3.js"></script>
+<script src="js.js"></script>
+<script>
+    const {createApp} = Vue
+    createApp({
+        data(){
+            return{
+                captcha: "",
+                form: {},
+                mode: "insert",
+                stations: []
+            }
+        },
+        methods: {
+            fetch(){
+                $.post("api/get.php",{action: "station"},(res)=>{
+                    this.stations = JSON.parse(res)
+                })
+            },
+            insert(){
+                this.mode = "insert"
+                $("div.modal").modal("show")
+            },
+            edit(item){
+                this.mode = "edit"
+                this.form = item
+                $("div.modal").modal("show")
+            },
+            del(item){
+                if (confirm(`確認刪除${item.name}?`)) {
+                    $.post("api/del.php",{action:"station",id:item.id},()=>{
+                        alert("資料已刪除")
+                        this.fetch()
+                    })
+                }
+            },
+            submit(){
+                const url = this.mode == 'insert' ? 'api/add.php' : 'api/edit.php'
+                $.post(url,{name: this.form.name,action: "station",id: this.form.id},(res)=>{
+                    alert(res)
+                    back()
+                    this.fetch()
+                })
+            }
+        },
+        mounted(){
+            this.fetch()
+        }
+    }).mount("#app")
+</script>

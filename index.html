@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大眾運輸查詢系統</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="bootstrap.css">
+    <script src="vue.3.3.3.js"></script>
+</head>
+<body>
+<header class="shadow d-flex" id="navbar">
+    <div class="d-flex col-10 logo">
+        <img src="./icon/mainicon.png" alt="" id="logo">
+        <h1 class="ln-100">大眾運輸查詢系統</h1>
+    </div>
+    <div class="col-2 ln-100">
+        <button class="btn btn-outline-dark" onclick="admin()">系統管理</button>
+        <button class="btn btn-outline-dark" onclick="logout()" id="logout-button">登出</button>
+    </div>
+</header>
+<div id="app">
+    <select name="route" id="route" class="form-control mr-auto ml-auto w-25 mt-5 mb-3" v-model="route" @change="map">
+        <option selected disabled>請選擇路線</option>
+        <option :value="item.id" v-for="item in routes">{{item.name}}</option>
+    </select>
+    <input type="range" v-model="row" class="form-control-range w-25 mx-auto" min="2" max="5">
+    <div class="shadow card mt-5 ml-auto mr-auto" id="route-map">
+        <div id="map"></div>
+    </div>
+    <div class="modal fade">
+        <form @submit.prevent="login" class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header text-center">
+                    <h1>系統管理登入</h1>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>帳號</label>
+                        <input type="text" class="form-control" name="username" v-model="form.username" required>
+                    </div>
+                    <div class="form-group">
+                        <label>密碼</label>
+                        <input type="text" class="form-control" name="password" v-model="form.password" required>
+                    </div>
+                    <div class="form-group">
+                        <label>驗證碼: {{ captcha }}</label>
+                        <input type="text" class="form-control" name="captcha" v-model="form.captcha" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-outline-info" id="regenerate-captha-button" @click="veri" type="button">
+                        重新產生驗證碼
+                    </button>
+                    <button class="btn btn-outline-primary" id="login-button">登入</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+</body>
+</html>
+<script src="jqueryv3.7.1.js"></script>
+<script src="jquery-uiv1.13.2.js"></script>
+<script src="bootstrap.js"></script>
+<script src="js.js"></script>
+<script>
+    const {createApp} = Vue
+    createApp({
+        data() {
+            return {
+                captcha: "",
+                form: {},
+                routes: [],
+                route: "",
+                row: 3,
+            }
+        },
+        methods: {
+            fetchRoutes() {
+                $.post("api/get.php", {action: "route"}, (res) => {
+                    this.routes = JSON.parse(res)
+                    this.route = this.routes[0].id
+                    this.map()
+                })
+            },
+            veri() {
+                $.post("api/get.php", {action: "veri"}, (res) => {
+                    this.captcha = res
+                })
+            },
+            login() {
+                if (this.captcha == this.form.captcha) {
+                    $.post("api/login.php", {
+                            username: this.form.username,
+                            password: this.form.password
+                        },
+                        (res) => {
+                            if (res == true) {
+                                alert("登入成功")
+                                location.href = 'route.html'
+                            } else {
+                                alert("帳號密碼錯誤")
+                            }
+                        })
+                } else {
+                    alert("驗證碼錯誤")
+                }
+            },
+            map() {
+                $.post("api/get.php", {action: "map", route: this.route}, (res) => {
+                    const data = JSON.parse(res)
+                    let map = ''
+                    for (let i = 0; i < data.length; i++) {
+                        if (i % 3 === 0) {
+                            map += `
+                            <div class="d-flex ${i % 6 === 3 ? 'flex-row-reverse' : ''}">`
+                        }
+                        map += `
+                        <div class="station">
+                            <div class="station-status ${data[i].class}">${data[i].bus}</div>
+                            <span class=station-point></span>
+                            <div class="station-name">${data[i].name}</div>
+                            ${(i === this.row - 1 || i % 3 === 2) && i!==data.length-1 ? '<span class="connect-line"></span>' : ''}
+                        </div>
+                        `
+                        if (i % 3 === 2 || i == data.length - 1) {
+                            map += `</div>`
+                        }
+                    }
+                    $("#map").html(map)
+                })
+            }
+        },
+        mounted() {
+            this.veri()
+            this.fetchRoutes()
+        }
+    }).mount("#app")
+    $(document).ready(function () {
+        console.log(localStorage.getItem("login"));
+        if (localStorage.getItem("login") == "1") {
+            $("div.modal").modal("show")
+            localStorage.removeItem("login")
+        }
+    })
+</script>

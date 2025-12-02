@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大眾運輸查詢系統</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="bootstrap.css">
+</head>
+
+<body>
+<header class="shadow d-flex" id="navbar">
+    <div class="d-flex col-10 logo">
+        <img src="./icon/mainicon.png" alt="" id="logo">
+        <h1 class="ln-100">大眾運輸查詢系統</h1>
+    </div>
+    <div class="col-2 ln-100">
+        <button class="btn btn-outline-dark" onclick="admin()">系統管理</button>
+        <button class="btn btn-outline-dark" onclick="logout()" id="logout-button">登出</button>
+    </div>
+</header>
+<div class="card card-body d-flex flex-row ml-auto mr-auto w-75 mt-5 shadow">
+    <a href="route.html" class="btn btn-outline-info mr-3 active" id="routelink">路線管理</a>
+    <a href="station.html" class="btn btn-outline-info mr-3" id="station-link">站點管理</a>
+    <a href="bus.html" class="btn btn-outline-info mr-3" id="bus-link">車輛管理</a>
+    <a href="basic.html" class="btn btn-outline-info mr-3" id="form-link">表單管理</a>
+</div>
+<div id="app">
+    <div class="shadow card card-body mt-5 ml-auto mr-auto w-75 shadow">
+        <h1 class="text-center">
+            路線管理
+            <button class="btn btn-outline-success" @click="insert" id="add-route-button">新增</button>
+        </h1>
+        <table class="table table-striped">
+            <tr>
+                <th style="width: 25%;">路線名稱</th>
+                <th style="width: 25%;">站點數量</th>
+                <th style="width: 25%;">每列站點數</th>
+                <th style="width: 25%;">操作</th>
+            </tr>
+            <tr v-for="item in routes">
+                <td class="route-name">{{item.name}}</td>
+                <td class="route-stations">{{item.stations}}</td>
+                <td class="route-row">{{item.row}}</td>
+                <td>
+                    <button class="btn btn-outline-dark mr-3" @click="edit(item)" id="edit-route-button"
+                            :data-route="item.name">編輯
+                    </button>
+                    <button class="btn btn-outline-danger" @click="del(item)" id="delete-route-button"
+                            :data-route="item.name">刪除
+                    </button>
+                </td>
+            </tr>
+        </table>
+    </div>
+    <div class="modal fade">
+        <form @submit.prevent="submit" class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header text-center">
+                    <h1>系統管理站點</h1>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>路線名稱</label>
+                        <input type="text" class="form-control" name="route" v-model="form.name" required>
+                        <label>每列站點數</label>
+                        <input type="number" class="form-control" name="row" v-model="form.row" min="2" max="5" required>
+                    </div>
+                    <ul v-for="(item,i) in stations" class="text-center">
+                        <div class="d-flex">
+                            <div style="width: 10%;" v-if="i === 0">開始</div>
+                            <div style="width: 10%;" v-else-if="i === stations.length - 1">結束</div>
+                            <div style="width: 10%;" v-else>中繼站</div>
+                            <div class="form-group d-flex" style="width: 25%;">
+                                <label>站點名稱</label>
+                                <select name="" class="w-75 form-control" v-model="selectedStations[i]">
+                                    <option v-for="opt in options" :value="opt.rank" :key="opt.rank"
+                                            :disabled="selectedStations.includes(opt.rank)">
+                                        {{ opt.name }}
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="form-group d-flex" style="width: 25%;">
+                                <label>行駛時間</label>
+                                <input type="number" name="need" v-model="item.need" class="form-control w-50"
+                                       min="0">
+                            </div>
+                            <div class="form-group d-flex" style="width: 25%;">
+                                <label>停留時間</label>
+                                <input type="number" name="stop" v-model="item.stop" class="form-control w-50"
+                                       min="0">
+                            </div>
+                            <div style="width: 15%;">
+                                <button class="btn btn-outline-danger" type="button"
+                                        v-if="i !== stations.length - 1 && i !== 0"
+                                        @click="stations.splice(index,1)">刪除
+                                </button>
+                            </div>
+                        </div>
+                        <button class="btn btn-outline-primary mx-auto"
+                                @click="stations.push({name:null,stop:0,need:0})" type="button"
+                                v-if="i == stations.length - 2">新增站點
+                        </button>
+                    </ul>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-outline-secondary" id="back-button" onclick="back()"
+                            type="button">回上頁
+                    </button>
+                    <button class="btn btn-outline-primary" id="add-button" v-if="mode == 'insert'">新增</button>
+                    <button class="btn btn-outline-warning" id="edit-button" v-if="mode == 'edit'">編輯</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+</body>
+
+</html>
+<script src="jqueryv3.7.1.js"></script>
+<script src="jquery-uiv1.13.2.js"></script>
+<script src="bootstrap.js"></script>
+<script src="vue.3.3.3.js"></script>
+<script src="js.js"></script>
+<script>
+    const {createApp} = Vue
+    createApp({
+        data() {
+            return {
+                captcha: "",
+                form: {},
+                mode: "insert",
+                routes: [],
+                options: [],
+                stations: [
+                    {name: null, stop: 0, need: 0},
+                    {name: null, stop: 0, need: 0},
+                ],
+                selectedStations: [],
+            }
+        },
+        methods: {
+            fetch() {
+                $.post("api/get.php", {action: "route"}, (res) => {
+                    this.routes = JSON.parse(res)
+                })
+            },
+            fetchOption(callback) {
+                $.post("api/get.php", {action: "station"}, (res) => {
+                    this.options = JSON.parse(res)
+                    this.options = this.options.map(st => ({
+                        name: st.name,
+                        rank: st.id,
+                    }))
+                    if (callback) callback()
+                })
+            },
+            insert() {
+                this.stations = [
+                    {name: null, stop: 0, need: 0},
+                    {name: null, stop: 0, need: 0},
+                ],
+                    this.fetchOption(() => {
+                        if (this.options.length < 2) {
+                            alert("現在站點數量不到兩個無法建立路線")
+                        }
+                    })
+                this.selectedStations = [null, null]
+                this.mode = "insert"
+                $("div.modal").modal("show")
+            },
+            edit(item) {
+                this.mode = "edit"
+                this.form = item
+                console.log(item.id)
+                $.post("api/get.php", {action: "route-station", id: item.id}, (res) => {
+                    this.stations = JSON.parse(res)
+                    this.selectedStations = this.stations.map(s => s.station)
+                })
+                $("div.modal").modal("show")
+            },
+            del(item) {
+                if (confirm(`確認刪除${item.name}?`)) {
+                    $.post("api/del.php", {action: "route", id: item.id}, () => {
+                        alert("資料已刪除")
+                        this.fetch()
+                    })
+                }
+            },
+            submit() {
+                const url = this.mode == 'insert' ? 'api/add.php' : 'api/edit.php';
+
+                this.stations = this.stations.map((idx, i) => {
+                    return {
+                        name: this.selectedStations[i],
+                        need: idx.need,
+                        stop: idx.stop,
+                        rank: i,
+                    }
+                });
+                const checked = this.stations.filter((s) => s.name && s.need && s.stop)
+                if (checked.length < 2) {
+                    alert("每個路線至少需要兩個站點!")
+                } else {
+                    $.post(url, {stations: checked, name: this.form.name,row: this.form.row, action: "route", id: this.form.id}, (res) => {
+                        alert(res)
+                        back()
+                        this.fetch()
+                    })
+                }
+            }
+        },
+        mounted() {
+            this.fetchOption()
+            this.fetch()
+        }
+    }).mount("#app")
+</script>
